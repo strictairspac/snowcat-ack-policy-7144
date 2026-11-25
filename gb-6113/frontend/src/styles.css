@@ -115,3 +115,14 @@ td a[aria-current=true] { font-weight: 750; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+.continue-form { display: grid; gap: .9rem; margin-top: 1rem; }
+.continue-form textarea { width: 100%; min-height: 18rem; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .86rem; }
+.continue-form select, .continue-form input { max-width: 24rem; width: 100%; }
+.chip-list { display: flex; flex-wrap: wrap; gap: .45rem; margin: .45rem 0 .9rem; }
+.chip { display: inline-block; border: 1px solid var(--rule); background: var(--tint); border-radius: 999px; padding: .22rem .62rem; font-size: .86rem; overflow-wrap: anywhere; }
+.handoff-ledger, .official-handoff { border-left: .22rem solid var(--accent); background: var(--tint); padding: .9rem 1rem; margin: .8rem 0; }
+.handoff-ledger h3, .official-handoff h3 { margin-top: 0; }
+.handoff-ledger h4, .official-handoff h4 { margin: .9rem 0 .25rem; }
+.retry-control { display: grid; gap: .4rem; justify-items: start; }
+.button-row { display: flex; flex-wrap: wrap; gap: .6rem; }
+.hint { color: var(--muted); font-size: .9rem; margin: .2rem 0 .5rem; }

@@ -1,8 +1,10 @@
 import { api } from "../api/workbench.js";
+import { handoffSection } from "../components/handoff-panel.js";
 import { errorText, field } from "../components/common/fields.js";
 import { empty, pageHeading, section } from "../components/common/panel.js";
 import { resultTable } from "../components/common/table.js";
 import { submit } from "../hooks/submit.js";
+import { navigate } from "../router/router.js";
 import { el } from "../utils/dom.js";
 import { cell, download, time } from "../utils/format.js";
 
@@ -22,11 +24,27 @@ function signature(review) {
 export async function evidencePage(config, user, route) {
   const runs = (await api.runs()).filter(item => item.status === "done");
   const run = route.id ? await api.run(route.id) : runs[0];
-  if (!run?.result) return el("div", {class: "page"},
-    pageHeading(config.modules[3], null), empty("成功执行一个批次后可以查看、签核和下载证据。"),
-    el("a", {href: "#runs"}, config.modules[2]));
+  if (!run?.result) {
+    const failedRetry = run?.status === "failed" && user.role === "operator"
+      ? el("button", {
+          type: "button",
+          "data-testid": "evidence-retry-run",
+          onclick: async event => {
+            event.currentTarget.disabled = true;
+            await api.retryRun(run.id);
+            navigate(`runs/${run.id}`);
+          },
+        }, "失败重试（沿用同一批次）")
+      : null;
+    return el("div", {class: "page"},
+      pageHeading(config.modules[3], null),
+      empty(run?.failure || "成功执行一个批次后可以查看、签核和下载证据。"),
+      failedRetry,
+      el("a", {href: "#runs"}, config.modules[2]));
+  }
 
   const review = await api.review(run.id);
+  const handoff = await handoffSection(run, user);
   const issue = errorText();
   const button = el("button", {type: "button", onclick: async () => {
     button.disabled = true;
@@ -53,5 +71,6 @@ export async function evidencePage(config, user, route) {
     el("dl", {class: "metrics"}, Object.entries(run.result.metrics).map(([label, value]) =>
       el("div", {}, el("dt", {}, label), el("dd", {}, cell(value))))),
     section("业务结果明细", run.result.rows.length ? resultTable(run.result.rows) : empty("此批次无明细。")),
+    handoff,
     section("复核签署", signing));
 }

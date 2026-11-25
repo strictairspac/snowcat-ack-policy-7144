@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, Header
 
 from src.config.resources import engine
 from src.controllers.access import identity, operator
@@ -28,5 +30,12 @@ def register(form: CaseInput, user=Depends(operator)):
 
 
 @router.post("/{case_id}/runs", response_model=RunEntry, status_code=202)
-def schedule(case_id: int, form: RunInput, user=Depends(operator)):
+def schedule(
+    case_id: int,
+    form: RunInput,
+    user=Depends(operator),
+    idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None,
+):
+    if idempotency_key and not form.idempotency_key:
+        form.idempotency_key = idempotency_key
     return new_run(case_id, form, user)

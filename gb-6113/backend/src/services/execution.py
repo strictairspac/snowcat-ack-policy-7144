@@ -7,6 +7,7 @@ from src.config.resources import engine
 from src.constants.job_state import JobState
 from src.domain import scenario
 from src.models.cases import cases
+from src.models.handoffs import handoffs
 from src.models.runs import runs
 from src.services.audit import record
 from src.utils.serial import content_digest
@@ -24,8 +25,19 @@ def service_one():
         if task is None:
             return False
         payload = db.scalar(select(cases.c.payload).where(cases.c.id == task["case_id"]))
+        official_handoff = db.execute(
+            select(handoffs).where(handoffs.c.continuation_run_id == task["id"])
+        ).mappings().first()
+        context = None
+        if official_handoff:
+            manifest = dict(official_handoff["manifest"] or {})
+            context = {
+                **manifest,
+                "handoff_id": official_handoff["id"],
+                "source_run_id": official_handoff["source_run_id"],
+            }
         try:
-            result = scenario.run(payload, task["parameter"], db)
+            result = scenario.run(payload, task["parameter"], db, context=context)
             output = {"status": JobState.DONE, "result": result, "digest": content_digest(result)}
         except Exception as exc:
             # Let the failed database transaction roll back before persisting the error.

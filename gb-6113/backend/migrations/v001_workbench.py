@@ -1,4 +1,4 @@
-from src.models import audit, cases, reviews, runs, users  # Register the tables.
+from src.models import audit, cases, handoffs, reviews, runs, users  # Register the tables.
 from src.models.base import metadata
 
 

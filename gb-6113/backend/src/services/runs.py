@@ -1,7 +1,7 @@
 from time import time
 
 from fastapi import HTTPException
-from sqlalchemy import insert, select
+from sqlalchemy import insert, select, update
 
 from src.constants.job_state import JobState
 from src.domain.scenario import CONFIG
@@ -35,3 +35,19 @@ def enqueue(db, case_id, parameter, actor):
     run_id = change.inserted_primary_key[0]
     audit.record(db, "enqueue", actor, "run", run_id)
     return get(db, run_id)
+
+
+def retry(db, run_id, actor):
+    """Requeue one failed batch in place; retries never allocate a new id."""
+    run = get(db, run_id)
+    if run["status"] == JobState.QUEUED:
+        return get(db, run_id), False
+    if run["status"] == JobState.DONE:
+        raise HTTPException(409, "已完成批次不需要重试")
+    db.execute(update(runs).where(runs.c.id == run_id).values(
+        status=JobState.QUEUED,
+        failure=None,
+        finished_at=None,
+    ))
+    audit.record(db, "retry_run", actor, "run", run_id)
+    return get(db, run_id), True
